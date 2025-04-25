@@ -1,0 +1,5 @@
+pypff==20210418  # For reading PST/OST files
+pdfkit==1.0.0    # For saving emails as PDF
+PyPDF2==3.0.1    # For handling PDF operations (if used)
+lxml==4.9.3      # For parsing HTML (if needed for email content)
+reportlab==3.6.12  # For generating PDFs programmatically
