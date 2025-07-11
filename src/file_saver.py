@@ -31,7 +31,7 @@ class FileSaver:
         """
         self.base_directory = base_directory
 
-    def save_email(self, email, folder_path, format="eml"):
+    def save_email(self, email, folder_path, output_format="eml"):
         """
         Save the email in the specified format while maintaining folder structure.
 
@@ -39,13 +39,13 @@ class FileSaver:
             email: The pypff email object to save.
             folder_path (str): The relative folder path where the email should be
                 saved.
-            format (str, optional): The output format ('eml' or 'pdf').
+            output_format (str, optional): The output format ('eml' or 'pdf').
                 Defaults to 'eml'.
         """
         folder_path = self._create_full_path(folder_path)
-        if format == "eml":
+        if output_format == "eml":
             self._save_as_eml(email, folder_path)
-        elif format == "pdf":
+        elif output_format == "pdf":
             self._save_as_pdf(email, folder_path)
 
     def save_attachment(self, attachment, folder_path):
@@ -283,7 +283,8 @@ class FileSaver:
             safe_subject = self._sanitize_filename(email.subject or "No Subject")
             pdf_file_path = self._get_unique_filename(folder_path, safe_subject, "pdf")
 
-            # Use the email's plain text body if available, otherwise fall back to HTML or a default message
+            # Use the email's plain text body if available, otherwise fall back
+            # to HTML or a default message
             content = (
                 email.plain_text_body
                 or email.html_body
@@ -401,9 +402,8 @@ class FileSaver:
                 attachment_file.write(attachment.content)
 
         except PermissionError as e:
-            print(
-                f"Permission denied saving original attachment '{attachment.filename}': {e}"
-            )
+            filename = attachment.filename
+            print(f"Permission denied saving original attachment '{filename}': {e}")
         except OSError as e:
             print(f"OS error saving original attachment '{attachment.filename}': {e}")
         except Exception as e:

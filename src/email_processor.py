@@ -1,6 +1,7 @@
 import email as py_email
 import os
 import re
+import traceback
 from datetime import datetime
 from email import policy
 from pathlib import Path
@@ -8,6 +9,9 @@ from pathlib import Path
 import pypff
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
+
+from file_saver import FileSaver
+from pst_processor import PSTProcessor
 
 
 class EmailProcessor:
@@ -81,9 +85,12 @@ class EmailProcessor:
 
         return self.emails
 
-    def process_emails(self, output_dir, output_format="eml", verbose=False, dry_run=False):
+    def process_emails(
+        self, output_dir, output_format="eml", verbose=False, dry_run=False
+    ):
         """
-        Process emails with the given arguments and extract them to the specified formats.
+        Process emails with the given arguments and extract them to the
+        specified formats.
 
         Args:
             output_dir (str): Output directory for extracted emails
@@ -102,13 +109,13 @@ class EmailProcessor:
         - Extracts and saves attachments
         - Provides progress feedback and error handling
         """
-        from pst_processor import PSTProcessor
-        from file_saver import FileSaver
-        
         # Validate input file using PSTProcessor
         pst_processor = PSTProcessor()
         if not pst_processor.validate_pst_file(self.file_path):
-            print(f"❌ Error: Input file '{self.file_path}' does not exist or is not a valid PST/OST file.")
+            print(
+                f"❌ Error: Input file '{self.file_path}' does not exist or "
+                f"is not a valid PST/OST file."
+            )
             return False
 
         # Create output directory
@@ -164,28 +171,30 @@ class EmailProcessor:
                     if output_format in ["eml", "both"]:
                         self.save_as_eml(email, full_folder_path)
                         if verbose:
-                            print(
-                                f"✅ Saved EML: {folder_path}/{email.subject or 'No Subject'}"
-                            )
+                            subject = email.subject or "No Subject"
+                            print(f"✅ Saved EML: {folder_path}/{subject}")
 
                     if output_format in ["pdf", "both"]:
                         self.save_as_pdf(email, full_folder_path)
                         if verbose:
-                            print(
-                                f"✅ Saved PDF: {folder_path}/{email.subject or 'No Subject'}"
-                            )
+                            subject = email.subject or "No Subject"
+                            print(f"✅ Saved PDF: {folder_path}/{subject}")
 
                     # Save attachments if any
                     try:
                         num_attachments = email.number_of_attachments
                         if num_attachments and num_attachments > 0:
-                            attachments_folder = os.path.join(full_folder_path, "attachments")
+                            attachments_folder = os.path.join(
+                                full_folder_path, "attachments"
+                            )
                             os.makedirs(attachments_folder, exist_ok=True)
 
                             for i in range(num_attachments):
                                 try:
                                     attachment = email.get_attachment(i)
-                                    file_saver.save_attachment(attachment, attachments_folder)
+                                    file_saver.save_attachment(
+                                        attachment, attachments_folder
+                                    )
                                     if verbose:
                                         print(f"📎 Saved attachment: {attachment.name}")
                                 except Exception as e:
@@ -201,9 +210,8 @@ class EmailProcessor:
                         print(f"📧 Processed {processed}/{len(emails)} emails...")
 
                 except Exception as e:
-                    print(
-                        f"❌ Error processing email '{email.subject or 'No Subject'}': {e}"
-                    )
+                    subject = email.subject or "No Subject"
+                    print(f"❌ Error processing email '{subject}': {e}")
                     continue
 
             print(f"\n🎉 Successfully processed {processed}/{len(emails)} emails!")
@@ -213,7 +221,6 @@ class EmailProcessor:
         except Exception as e:
             print(f"❌ Error: {e}")
             if verbose:
-                import traceback
                 traceback.print_exc()
             return False
 
@@ -238,19 +245,23 @@ class EmailProcessor:
         transport_headers = getattr(email, "transport_headers", None)
         if transport_headers:
             try:
-                msg = py_email.message_from_string(transport_headers, policy=policy.default)
+                msg = py_email.message_from_string(
+                    transport_headers, policy=policy.default
+                )
                 to_recipients = msg.get_all("To", [])
                 cc_recipients = msg.get_all("Cc", [])
                 bcc_recipients = msg.get_all("Bcc", [])
                 all_recipients = to_recipients + cc_recipients + bcc_recipients
-                recipient_list = [str(recipient) for recipient in all_recipients if recipient]
+                recipient_list = [
+                    str(recipient) for recipient in all_recipients if recipient
+                ]
             except Exception:
                 pass
-        
+
         # Fallback to display_to if available
         if not recipient_list and hasattr(email, "display_to") and email.display_to:
             recipient_list = [email.display_to]
-        
+
         # Final fallback
         if not recipient_list:
             recipient_list = ["Unknown Recipient"]
@@ -303,28 +314,32 @@ class EmailProcessor:
 
         # Write email headers
         c.drawString(50, 750, f"Subject: {email.subject or 'No Subject'}")
-        c.drawString(
-            50,
-            730,
-            f"From: {email.sender_name or 'Unknown Sender'} <{email.sender_email_address or 'Unknown Email'}>",
-        )
-        
+        sender_name = email.sender_name or "Unknown Sender"
+        sender_email = email.sender_email_address or "Unknown Email"
+        c.drawString(50, 730, f"From: {sender_name} <{sender_email}>")
+
         # Extract recipient information from transport headers
         to_field = "Unknown Recipient"
         transport_headers = getattr(email, "transport_headers", None)
         if transport_headers:
             try:
-                msg = py_email.message_from_string(transport_headers, policy=policy.default)
+                msg = py_email.message_from_string(
+                    transport_headers, policy=policy.default
+                )
                 to_recipients = msg.get_all("To", [])
                 if to_recipients:
                     to_field = ", ".join(str(recipient) for recipient in to_recipients)
             except Exception:
                 pass
-        
+
         # Fallback to display_to if available
-        if to_field == "Unknown Recipient" and hasattr(email, "display_to") and email.display_to:
+        if (
+            to_field == "Unknown Recipient"
+            and hasattr(email, "display_to")
+            and email.display_to
+        ):
             to_field = email.display_to
-            
+
         c.drawString(50, 710, f"To: {to_field}")
 
         # Write email body
@@ -393,15 +408,15 @@ class EmailProcessor:
         # List of encodings to try, in order of preference
         # Based on common email encodings and Portuguese/international content
         encodings_to_try = [
-            'utf-8',           # Most common modern encoding
-            'iso-8859-1',      # Latin-1, very common for European languages
-            'windows-1252',    # Windows Latin-1, common in Windows emails
-            'cp1252',          # Alternative name for windows-1252
-            'iso-8859-15',     # Latin-9, includes Euro symbol
-            'utf-16',          # Unicode with BOM
-            'utf-16le',        # Little-endian UTF-16
-            'utf-16be',        # Big-endian UTF-16
-            'ascii',           # Basic ASCII as last resort
+            "utf-8",  # Most common modern encoding
+            "iso-8859-1",  # Latin-1, very common for European languages
+            "windows-1252",  # Windows Latin-1, common in Windows emails
+            "cp1252",  # Alternative name for windows-1252
+            "iso-8859-15",  # Latin-9, includes Euro symbol
+            "utf-16",  # Unicode with BOM
+            "utf-16le",  # Little-endian UTF-16
+            "utf-16be",  # Big-endian UTF-16
+            "ascii",  # Basic ASCII as last resort
         ]
 
         # First, try to detect if it's a double-encoded UTF-8 (common issue)
@@ -409,12 +424,15 @@ class EmailProcessor:
         # and then re-encoded as UTF-8
         try:
             # Try decoding as Latin-1 first, then re-encode and decode as UTF-8
-            temp_decoded = body_bytes.decode('latin-1')
-            if any(char in temp_decoded for char in ['Ã§', 'Ã£', 'Ã¡', 'Ã©', 'Ã­', 'Ã³', 'Ãº']):
+            temp_decoded = body_bytes.decode("latin-1")
+            if any(
+                char in temp_decoded
+                for char in ["Ã§", "Ã£", "Ã¡", "Ã©", "Ã­", "Ã³", "Ãº"]
+            ):
                 # Likely double-encoded UTF-8, try to fix it
                 try:
-                    fixed_bytes = temp_decoded.encode('latin-1')
-                    return fixed_bytes.decode('utf-8')
+                    fixed_bytes = temp_decoded.encode("latin-1")
+                    return fixed_bytes.decode("utf-8")
                 except (UnicodeDecodeError, UnicodeEncodeError):
                     pass
         except UnicodeDecodeError:
@@ -424,21 +442,25 @@ class EmailProcessor:
         for encoding in encodings_to_try:
             try:
                 decoded = body_bytes.decode(encoding)
-                
+
                 # Validate the result - check for common problematic patterns
-                if encoding == 'utf-8' and any(char in decoded for char in ['Ã§', 'Ã£', 'Ã¡']):
+                if encoding == "utf-8" and any(
+                    char in decoded for char in ["Ã§", "Ã£", "Ã¡"]
+                ):
                     # This might be wrongly decoded UTF-8, skip to next encoding
                     continue
-                
+
                 # If we get here, the decoding worked
                 return decoded
-                
+
             except (UnicodeDecodeError, UnicodeError):
                 continue
 
         # If all encodings fail, use UTF-8 with error replacement as last resort
         try:
-            return body_bytes.decode('utf-8', errors='replace')
+            return body_bytes.decode("utf-8", errors="replace")
         except Exception:
             # Absolute last resort
-            return f"Error: Could not decode email body (length: {len(body_bytes)} bytes)"
+            return (
+                f"Error: Could not decode email body (length: {len(body_bytes)} bytes)"
+            )

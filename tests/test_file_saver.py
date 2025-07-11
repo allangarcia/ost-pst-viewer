@@ -60,7 +60,7 @@ class TestFileSaver(unittest.TestCase):
         self.assertTrue(os.path.exists(expected_file_path))
 
         # Verify the file content
-        with open(expected_file_path, "r") as file:
+        with open(expected_file_path, "r", encoding="utf-8") as file:
             content = file.read()
         self.assertIn("This is a test email.", content)
 
@@ -123,7 +123,7 @@ class TestFileSaver(unittest.TestCase):
         self.assertTrue(os.path.exists(expected_file_path))
 
         # Verify the file content
-        with open(expected_file_path, "r") as file:
+        with open(expected_file_path, "r", encoding="utf-8") as file:
             content = file.read()
         self.assertIn("This is a structured email.", content)
 

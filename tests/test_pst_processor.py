@@ -1,7 +1,7 @@
 import os
 import shutil
-import unittest
 import tempfile
+import unittest
 
 from src.pst_processor import PSTProcessor
 
@@ -59,30 +59,30 @@ class TestPSTProcessor(unittest.TestCase):
         """
         # Create test directory and files
         os.makedirs(self.test_pst_dir, exist_ok=True)
-        
+
         # Create test files
         test_files = [
             "test1.pst",
-            "test2.ost", 
+            "test2.ost",
             "archive.pst",
             "readme.txt",  # Should be ignored
-            "data.csv"     # Should be ignored
+            "data.csv",  # Should be ignored
         ]
-        
+
         for filename in test_files:
             filepath = os.path.join(self.test_pst_dir, filename)
-            with open(filepath, 'w') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write("test content")
 
         pst_files = self.processor.find_pst_files()
-        
+
         # Should find only PST/OST files, sorted
         expected_files = [
             os.path.join(self.test_pst_dir, "archive.pst"),
             os.path.join(self.test_pst_dir, "test1.pst"),
-            os.path.join(self.test_pst_dir, "test2.ost")
+            os.path.join(self.test_pst_dir, "test2.ost"),
         ]
-        
+
         self.assertEqual(pst_files, expected_files)
 
     def test_validate_pst_file_valid(self):
@@ -95,13 +95,13 @@ class TestPSTProcessor(unittest.TestCase):
         """
         # Create test files
         os.makedirs(self.test_pst_dir, exist_ok=True)
-        
+
         pst_file = os.path.join(self.test_pst_dir, "test.pst")
         ost_file = os.path.join(self.test_pst_dir, "test.ost")
-        
-        with open(pst_file, 'w') as f:
+
+        with open(pst_file, "w", encoding="utf-8") as f:
             f.write("test content")
-        with open(ost_file, 'w') as f:
+        with open(ost_file, "w", encoding="utf-8") as f:
             f.write("test content")
 
         self.assertTrue(self.processor.validate_pst_file(pst_file))
@@ -118,15 +118,15 @@ class TestPSTProcessor(unittest.TestCase):
         """
         # Test non-existent file
         self.assertFalse(self.processor.validate_pst_file("/non/existent/file.pst"))
-        
+
         # Test wrong extension
         os.makedirs(self.test_pst_dir, exist_ok=True)
         txt_file = os.path.join(self.test_pst_dir, "test.txt")
-        with open(txt_file, 'w') as f:
+        with open(txt_file, "w", encoding="utf-8") as f:
             f.write("test content")
-        
+
         self.assertFalse(self.processor.validate_pst_file(txt_file))
-        
+
         # Test empty/None paths
         self.assertFalse(self.processor.validate_pst_file(""))
         self.assertFalse(self.processor.validate_pst_file(None))
@@ -141,16 +141,16 @@ class TestPSTProcessor(unittest.TestCase):
         """
         # Test empty directory
         self.assertEqual(self.processor.get_pst_files_count(), 0)
-        
+
         # Test with files
         os.makedirs(self.test_pst_dir, exist_ok=True)
-        
+
         # Create test PST files
         for i in range(3):
             filepath = os.path.join(self.test_pst_dir, f"test{i}.pst")
-            with open(filepath, 'w') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 f.write("test content")
-        
+
         self.assertEqual(self.processor.get_pst_files_count(), 3)
 
     def test_ensure_pst_directory_exists(self):
@@ -164,12 +164,12 @@ class TestPSTProcessor(unittest.TestCase):
         """
         # Directory shouldn't exist initially
         self.assertFalse(os.path.exists(self.test_pst_dir))
-        
+
         # Should create directory and return True
         result = self.processor.ensure_pst_directory_exists()
         self.assertTrue(result)
         self.assertTrue(os.path.exists(self.test_pst_dir))
-        
+
         # Should return True if directory already exists
         result = self.processor.ensure_pst_directory_exists()
         self.assertTrue(result)

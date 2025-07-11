@@ -59,9 +59,9 @@ class PSTProcessor:
         """
         if not file_path or not os.path.exists(file_path):
             return False
-        
+
         file_extension = os.path.splitext(file_path)[1].lower()
-        return file_extension in ['.pst', '.ost']
+        return file_extension in [".pst", ".ost"]
 
     def get_pst_files_count(self):
         """
