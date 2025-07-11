@@ -149,12 +149,19 @@ class EmailProcessor:
         if not recipient_list:
             recipient_list = ["Unknown Recipient"]
 
+        # Get email body and decode if it's in bytes
+        body = email.plain_text_body or email.html_body or ""
+        if isinstance(body, bytes):
+            # Try to detect encoding using multiple approaches
+            detected_body = self._decode_email_body(body)
+            body = detected_body
+
         with open(full_path, "w", encoding="utf-8") as eml_file:
             eml_file.write(f"Subject: {email.subject}\n")
             eml_file.write(f"From: {email.sender_name}\n")
             eml_file.write(f"To: {', '.join(recipient_list)}\n")
             eml_file.write("\n")
-            eml_file.write(email.plain_text_body or email.html_body or "")
+            eml_file.write(body)
 
     def save_as_pdf(self, email, output_path):
         """
@@ -182,7 +189,7 @@ class EmailProcessor:
 
         # Decode the body if it is in bytes
         if isinstance(content, bytes):
-            content = content.decode("utf-8", errors="replace")
+            content = self._decode_email_body(content)
 
         # Create the PDF
         c = canvas.Canvas(full_path, pagesize=letter)
@@ -229,3 +236,72 @@ class EmailProcessor:
 
         # Save the PDF
         c.save()
+
+    def _decode_email_body(self, body_bytes):
+        """
+        Decode email body bytes with smart encoding detection.
+
+        This method tries multiple approaches to detect and decode the correct
+        encoding for email body content, handling common encoding issues.
+
+        Args:
+            body_bytes (bytes): The raw email body content in bytes.
+
+        Returns:
+            str: The decoded email body as a string.
+        """
+        if not isinstance(body_bytes, bytes):
+            return str(body_bytes)
+
+        # List of encodings to try, in order of preference
+        # Based on common email encodings and Portuguese/international content
+        encodings_to_try = [
+            'utf-8',           # Most common modern encoding
+            'iso-8859-1',      # Latin-1, very common for European languages
+            'windows-1252',    # Windows Latin-1, common in Windows emails
+            'cp1252',          # Alternative name for windows-1252
+            'iso-8859-15',     # Latin-9, includes Euro symbol
+            'utf-16',          # Unicode with BOM
+            'utf-16le',        # Little-endian UTF-16
+            'utf-16be',        # Big-endian UTF-16
+            'ascii',           # Basic ASCII as last resort
+        ]
+
+        # First, try to detect if it's a double-encoded UTF-8 (common issue)
+        # This happens when UTF-8 encoded text is incorrectly decoded as Latin-1
+        # and then re-encoded as UTF-8
+        try:
+            # Try decoding as Latin-1 first, then re-encode and decode as UTF-8
+            temp_decoded = body_bytes.decode('latin-1')
+            if any(char in temp_decoded for char in ['Ã§', 'Ã£', 'Ã¡', 'Ã©', 'Ã­', 'Ã³', 'Ãº']):
+                # Likely double-encoded UTF-8, try to fix it
+                try:
+                    fixed_bytes = temp_decoded.encode('latin-1')
+                    return fixed_bytes.decode('utf-8')
+                except (UnicodeDecodeError, UnicodeEncodeError):
+                    pass
+        except UnicodeDecodeError:
+            pass
+
+        # Try each encoding in order
+        for encoding in encodings_to_try:
+            try:
+                decoded = body_bytes.decode(encoding)
+                
+                # Validate the result - check for common problematic patterns
+                if encoding == 'utf-8' and any(char in decoded for char in ['Ã§', 'Ã£', 'Ã¡']):
+                    # This might be wrongly decoded UTF-8, skip to next encoding
+                    continue
+                
+                # If we get here, the decoding worked
+                return decoded
+                
+            except (UnicodeDecodeError, UnicodeError):
+                continue
+
+        # If all encodings fail, use UTF-8 with error replacement as last resort
+        try:
+            return body_bytes.decode('utf-8', errors='replace')
+        except Exception:
+            # Absolute last resort
+            return f"Error: Could not decode email body (length: {len(body_bytes)} bytes)"
