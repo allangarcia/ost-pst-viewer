@@ -5,7 +5,6 @@ This script processes PST/OST files and extracts emails to various formats.
 """
 
 import argparse
-import glob
 import os
 import sys
 from pathlib import Path
@@ -15,29 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from email_processor import EmailProcessor  # noqa: E402
 from file_saver import FileSaver  # noqa: E402
-
-
-def find_pst_files():
-    """
-    Find all PST/OST files in the pst_files directory.
-
-    Returns:
-        list: A sorted list of file paths to PST/OST files found in the
-            pst_files directory. Returns an empty list if no files are found
-            or if the directory doesn't exist.
-
-    Note:
-        Creates the pst_files directory if it doesn't exist.
-    """
-    pst_dir = "pst_files"
-    if not os.path.exists(pst_dir):
-        os.makedirs(pst_dir, exist_ok=True)
-        return []
-
-    pst_files = glob.glob(os.path.join(pst_dir, "*.pst")) + glob.glob(
-        os.path.join(pst_dir, "*.ost")
-    )
-    return sorted(pst_files)
+from pst_processor import PSTProcessor  # noqa: E402
 
 
 def interactive_mode():
@@ -59,8 +36,9 @@ def interactive_mode():
     print("🔍 PST/OST Email Exporter - Interactive Mode")
     print("=" * 50)
 
-    # Find PST files
-    pst_files = find_pst_files()
+    # Find PST files using PSTProcessor
+    pst_processor = PSTProcessor()
+    pst_files = pst_processor.find_pst_files()
 
     if not pst_files:
         print("⚠️  No PST/OST files found in 'pst_files' directory")
@@ -74,8 +52,8 @@ def interactive_mode():
         )
         if custom in ["y", "yes"]:
             pst_file = input("Enter the full path to your PST/OST file: ").strip()
-            if not os.path.exists(pst_file):
-                print(f"❌ File '{pst_file}' does not exist")
+            if not pst_processor.validate_pst_file(pst_file):
+                print(f"❌ File '{pst_file}' does not exist or is not a valid PST/OST file")
                 return None
         else:
             return None
@@ -93,8 +71,8 @@ def interactive_mode():
 
             if choice.lower() == "c":
                 pst_file = input("Enter the full path to your PST/OST file: ").strip()
-                if not os.path.exists(pst_file):
-                    print(f"❌ File '{pst_file}' does not exist")
+                if not pst_processor.validate_pst_file(pst_file):
+                    print(f"❌ File '{pst_file}' does not exist or is not a valid PST/OST file")
                     continue
                 break
 
@@ -174,13 +152,11 @@ def process_emails(args):
     - Extracts and saves attachments
     - Provides progress feedback and error handling
     """
-    # Validate input file
-    if not os.path.exists(args["input"]):
-        print(f"❌ Error: Input file '{args['input']}' does not exist.")
+    # Validate input file using PSTProcessor
+    pst_processor = PSTProcessor()
+    if not pst_processor.validate_pst_file(args["input"]):
+        print(f"❌ Error: Input file '{args['input']}' does not exist or is not a valid PST/OST file.")
         return False
-
-    if not args["input"].lower().endswith((".pst", ".ost")):
-        print(f"⚠️  Warning: '{args['input']}' doesn't appear to be a PST/OST file.")
 
     # Create output directory
     output_dir = Path(args["output"])

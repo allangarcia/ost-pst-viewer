@@ -43,37 +43,6 @@ class EmailProcessor:
         self.file_path = file_path
         self.emails = []
 
-    def _format_delivery_time(self, email):
-        """
-        Format the delivery time for use in filenames as [YYYY-MM-DD].
-
-        Falls back to creation_time or current date if delivery_time is not
-        available.
-
-        Args:
-            email: The email object containing delivery_time and creation_time
-                attributes.
-
-        Returns:
-            str: Formatted date string in the format [YYYY-MM-DD].
-        """
-        try:
-            # Try to get delivery_time first
-            delivery_time = getattr(email, "delivery_time", None)
-            if delivery_time:
-                return f"[{delivery_time.strftime('%Y-%m-%d')}]"
-
-            # Fall back to creation_time
-            creation_time = getattr(email, "creation_time", None)
-            if creation_time:
-                return f"[{creation_time.strftime('%Y-%m-%d')}]"
-
-            # Last resort: use current date
-            return f"[{datetime.now().strftime('%Y-%m-%d')}]"
-        except (AttributeError, TypeError):
-            # If there's any error with date formatting, use current date
-            return f"[{datetime.now().strftime('%Y-%m-%d')}]"
-
     def extract_messages(self, folder, folder_path=""):
         """
         Recursively extract messages from the given folder and its subfolders.
@@ -236,6 +205,37 @@ class EmailProcessor:
 
         # Save the PDF
         c.save()
+
+    def _format_delivery_time(self, email):
+        """
+        Format the delivery time for use in filenames as [YYYY-MM-DD].
+
+        Falls back to creation_time or current date if delivery_time is not
+        available.
+
+        Args:
+            email: The email object containing delivery_time and creation_time
+                attributes.
+
+        Returns:
+            str: Formatted date string in the format [YYYY-MM-DD].
+        """
+        try:
+            # Try to get delivery_time first
+            delivery_time = getattr(email, "delivery_time", None)
+            if delivery_time:
+                return f"[{delivery_time.strftime('%Y-%m-%d')}]"
+
+            # Fall back to creation_time
+            creation_time = getattr(email, "creation_time", None)
+            if creation_time:
+                return f"[{creation_time.strftime('%Y-%m-%d')}]"
+
+            # Last resort: use current date
+            return f"[{datetime.now().strftime('%Y-%m-%d')}]"
+        except (AttributeError, TypeError):
+            # If there's any error with date formatting, use current date
+            return f"[{datetime.now().strftime('%Y-%m-%d')}]"
 
     def _decode_email_body(self, body_bytes):
         """
