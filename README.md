@@ -21,6 +21,7 @@ This project is a PST/OST email exporter that allows users to extract Outlook em
 ```text
 pst-exporter/
 ├── pst-exporter.py             # Main script (interactive + CLI modes)
+├── pst-exporter.bat            # Windows convenience wrapper
 ├── src/                        # Core application code
 │   ├── email_processor.py      # Handles email extraction and processing
 │   ├── file_saver.py           # Responsible for saving emails and attachments
@@ -31,6 +32,8 @@ pst-exporter/
 │   └── test_pst_processor.py   # Unit tests for PSTProcessor
 ├── pst_files/                  # Place your PST/OST files here
 ├── output/                     # Generated output files
+├── .github/                    # GitHub workflows and templates
+├── .vscode/                    # VS Code workspace settings
 ├── requirements.txt            # Project dependencies
 ├── pyproject.toml              # Python project configuration
 ├── setup.cfg                   # Additional project setup
@@ -54,6 +57,8 @@ pst-exporter/
    pip install -r requirements.txt
    ```
 
+3. **For Windows users**: The included `pst-exporter.bat` file provides a convenient way to run the application without needing to type Python commands.
+
 ## Usage
 
 ### 🎯 Quick Start (Interactive Mode)
@@ -64,7 +69,10 @@ Simply run the script without any arguments to enter interactive mode:
 # Linux/Mac/Codespaces
 ./pst-exporter.py
 
-# Windows (PowerShell or Command Prompt)
+# Windows (using batch file - recommended)
+pst-exporter.bat
+
+# Windows (using Python directly)
 python pst-exporter.py
 ```
 
@@ -80,8 +88,11 @@ The interactive mode will:
 For batch processing or automation:
 
 ```bash
-# Basic usage
+# Basic usage (Linux/Mac)
 ./pst-exporter.py -i pst_files/archive.pst
+
+# Basic usage (Windows - using batch file)
+pst-exporter.bat -i pst_files/archive.pst
 
 # Specify output format and directory
 ./pst-exporter.py -i pst_files/archive.pst -f pdf -o extracted_emails
@@ -92,6 +103,8 @@ For batch processing or automation:
 # Dry run to preview what would be processed
 ./pst-exporter.py -i pst_files/archive.pst --dry-run
 ```
+
+**Note for Windows users**: Replace `./pst-exporter.py` with `pst-exporter.bat` in any of the above commands for easier execution.
 
 ### 📋 Command Line Options
 
@@ -135,13 +148,17 @@ Recent updates to the project include:
 Potential areas for improvement:
 
 - Separate command-line argument parsing into its own module
-- Add configuration file support for default settings
+- Add configuration file support for default settings and export formatting
 - Implement email filtering and search capabilities
 - Add support for additional output formats (HTML, JSON)
+- Make a graphical interface using Electron or similar
+- Improve the test files for better understanding and test automation on PR
 
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+This is a fork. So you can submit your ideas to the original author as well.
 
 ## License
 
