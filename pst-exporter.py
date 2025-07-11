@@ -248,21 +248,24 @@ def process_emails(args):
                         )
 
                 # Save attachments if any
-                if (
-                    hasattr(email, "number_of_attachments")
-                    and email.number_of_attachments > 0
-                ):
-                    attachments_folder = os.path.join(full_folder_path, "attachments")
-                    os.makedirs(attachments_folder, exist_ok=True)
+                try:
+                    # Check if email has attachments safely
+                    num_attachments = getattr(email, "number_of_attachments", 0)
+                    if num_attachments and num_attachments > 0:
+                        attachments_folder = os.path.join(full_folder_path, "attachments")
+                        os.makedirs(attachments_folder, exist_ok=True)
 
-                    for i in range(email.number_of_attachments):
-                        try:
-                            attachment = email.get_attachment(i)
-                            file_saver.save_attachment(attachment, attachments_folder)
-                            if args.get("verbose", False):
-                                print(f"📎 Saved attachment: {attachment.name}")
-                        except Exception as e:
-                            print(f"⚠️  Error saving attachment {i}: {e}")
+                        for i in range(num_attachments):
+                            try:
+                                attachment = email.get_attachment(i)
+                                file_saver.save_attachment(attachment, attachments_folder)
+                                if args.get("verbose", False):
+                                    print(f"📎 Saved attachment: {attachment.name}")
+                            except Exception as e:
+                                print(f"⚠️  Error saving attachment {i}: {e}")
+                except Exception as e:
+                    if args.get("verbose", False):
+                        print(f"⚠️  Error checking attachments for email '{email.subject or 'No Subject'}': {e}")
 
                 processed += 1
 
