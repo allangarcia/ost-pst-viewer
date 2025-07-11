@@ -249,8 +249,7 @@ def process_emails(args):
 
                 # Save attachments if any
                 try:
-                    # Check if email has attachments safely
-                    num_attachments = getattr(email, "number_of_attachments", 0)
+                    num_attachments = email.number_of_attachments
                     if num_attachments and num_attachments > 0:
                         attachments_folder = os.path.join(full_folder_path, "attachments")
                         os.makedirs(attachments_folder, exist_ok=True)
@@ -263,9 +262,9 @@ def process_emails(args):
                                     print(f"📎 Saved attachment: {attachment.name}")
                             except Exception as e:
                                 print(f"⚠️  Error saving attachment {i}: {e}")
-                except Exception as e:
-                    if args.get("verbose", False):
-                        print(f"⚠️  Error checking attachments for email '{email.subject or 'No Subject'}': {e}")
+                except Exception:
+                    # Silently assume no attachments if access fails
+                    pass
 
                 processed += 1
 
