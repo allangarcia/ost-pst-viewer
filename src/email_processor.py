@@ -1,6 +1,8 @@
+import email as py_email
 import os
 import re
 from datetime import datetime
+from email import policy
 
 import pypff
 from reportlab.lib.pagesizes import letter
@@ -125,10 +127,32 @@ class EmailProcessor:
         file_name = f"{date_prefix} - {clean_subject[:50].strip()}.eml"
         full_path = os.path.join(output_path, file_name)
 
+        # Extract recipient information from transport headers
+        recipient_list = []
+        transport_headers = getattr(email, "transport_headers", None)
+        if transport_headers:
+            try:
+                msg = py_email.message_from_string(transport_headers, policy=policy.default)
+                to_recipients = msg.get_all("To", [])
+                cc_recipients = msg.get_all("Cc", [])
+                bcc_recipients = msg.get_all("Bcc", [])
+                all_recipients = to_recipients + cc_recipients + bcc_recipients
+                recipient_list = [str(recipient) for recipient in all_recipients if recipient]
+            except Exception:
+                pass
+        
+        # Fallback to display_to if available
+        if not recipient_list and hasattr(email, "display_to") and email.display_to:
+            recipient_list = [email.display_to]
+        
+        # Final fallback
+        if not recipient_list:
+            recipient_list = ["Unknown Recipient"]
+
         with open(full_path, "w", encoding="utf-8") as eml_file:
             eml_file.write(f"Subject: {email.subject}\n")
             eml_file.write(f"From: {email.sender_name}\n")
-            eml_file.write(f"To: {email.display_to}\n")
+            eml_file.write(f"To: {', '.join(recipient_list)}\n")
             eml_file.write("\n")
             eml_file.write(email.plain_text_body or email.html_body or "")
 
@@ -171,7 +195,24 @@ class EmailProcessor:
             730,
             f"From: {email.sender_name or 'Unknown Sender'} <{email.sender_email_address or 'Unknown Email'}>",
         )
-        c.drawString(50, 710, f"To: {email.display_to or 'Unknown Recipient'}")
+        
+        # Extract recipient information from transport headers
+        to_field = "Unknown Recipient"
+        transport_headers = getattr(email, "transport_headers", None)
+        if transport_headers:
+            try:
+                msg = py_email.message_from_string(transport_headers, policy=policy.default)
+                to_recipients = msg.get_all("To", [])
+                if to_recipients:
+                    to_field = ", ".join(str(recipient) for recipient in to_recipients)
+            except Exception:
+                pass
+        
+        # Fallback to display_to if available
+        if to_field == "Unknown Recipient" and hasattr(email, "display_to") and email.display_to:
+            to_field = email.display_to
+            
+        c.drawString(50, 710, f"To: {to_field}")
 
         # Write email body
         y_position = 690
