@@ -7,13 +7,11 @@ This script processes PST/OST files and extracts emails to various formats.
 import argparse
 import os
 import sys
-from pathlib import Path
 
 # Add src directory to path to import our modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 from email_processor import EmailProcessor  # noqa: E402
-from file_saver import FileSaver  # noqa: E402
 from pst_processor import PSTProcessor  # noqa: E402
 
 
@@ -144,127 +142,16 @@ def process_emails(args):
     Returns:
         bool: True if processing was successful, False if errors occurred.
 
-    This function performs the core email extraction workflow:
-    - Validates the input PST/OST file
-    - Creates the output directory structure
-    - Loads and processes all emails from the PST file
-    - Saves emails in the requested format(s)
-    - Extracts and saves attachments
-    - Provides progress feedback and error handling
+    This function is a wrapper that delegates to EmailProcessor.process_emails().
     """
-    # Validate input file using PSTProcessor
-    pst_processor = PSTProcessor()
-    if not pst_processor.validate_pst_file(args["input"]):
-        print(f"❌ Error: Input file '{args['input']}' does not exist or is not a valid PST/OST file.")
-        return False
-
-    # Create output directory
-    output_dir = Path(args["output"])
-    if not args.get("dry_run", False):
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-    print(f"\n🔍 Processing PST/OST file: {args['input']}")
-    print(f"📂 Output directory: {args['output']}")
-    print(f"📄 Output format: {args['format']}")
-    print("-" * 50)
-
-    try:
-        # Initialize processor and load emails
-        processor = EmailProcessor(args["input"])
-        emails = processor.load_emails()
-
-        print(f"✅ Found {len(emails)} emails to process")
-
-        if args.get("dry_run", False):
-            print("\n📋 DRY RUN - Files that would be created:")
-            for i, email_data in enumerate(emails[:10]):  # Show first 10 as preview
-                email = email_data["message"]
-                folder_path = email_data["folder_path"]
-
-                # Format delivery time for filename
-                date_prefix = processor._format_delivery_time(email)
-                subject = email.subject or "no_subject"
-                clean_subject = subject[:50].strip()
-
-                if args["format"] in ["eml", "both"]:
-                    print(f"  📧 {folder_path}/{date_prefix} - {clean_subject}.eml")
-                if args["format"] in ["pdf", "both"]:
-                    print(f"  📄 {folder_path}/{date_prefix} - {clean_subject}.pdf")
-
-            if len(emails) > 10:
-                print(f"  ... and {len(emails) - 10} more emails")
-            return True
-
-        # Initialize file saver
-        file_saver = FileSaver(args["output"])
-
-        # Process each email
-        processed = 0
-        for email_data in emails:
-            email = email_data["message"]
-            folder_path = email_data["folder_path"]
-
-            try:
-                # Create folder structure using FileSaver
-                full_folder_path = file_saver._create_full_path(folder_path)
-
-                # Save email in requested format(s)
-                if args["format"] in ["eml", "both"]:
-                    processor.save_as_eml(email, full_folder_path)
-                    if args.get("verbose", False):
-                        print(
-                            f"✅ Saved EML: {folder_path}/{email.subject or 'No Subject'}"
-                        )
-
-                if args["format"] in ["pdf", "both"]:
-                    processor.save_as_pdf(email, full_folder_path)
-                    if args.get("verbose", False):
-                        print(
-                            f"✅ Saved PDF: {folder_path}/{email.subject or 'No Subject'}"
-                        )
-
-                # Save attachments if any
-                try:
-                    num_attachments = email.number_of_attachments
-                    if num_attachments and num_attachments > 0:
-                        attachments_folder = os.path.join(full_folder_path, "attachments")
-                        os.makedirs(attachments_folder, exist_ok=True)
-
-                        for i in range(num_attachments):
-                            try:
-                                attachment = email.get_attachment(i)
-                                file_saver.save_attachment(attachment, attachments_folder)
-                                if args.get("verbose", False):
-                                    print(f"📎 Saved attachment: {attachment.name}")
-                            except Exception as e:
-                                print(f"⚠️  Error saving attachment {i}: {e}")
-                except Exception:
-                    # Silently assume no attachments if access fails
-                    pass
-
-                processed += 1
-
-                # Progress indicator
-                if not args.get("verbose", False) and processed % 50 == 0:
-                    print(f"📧 Processed {processed}/{len(emails)} emails...")
-
-            except Exception as e:
-                print(
-                    f"❌ Error processing email '{email.subject or 'No Subject'}': {e}"
-                )
-                continue
-
-        print(f"\n🎉 Successfully processed {processed}/{len(emails)} emails!")
-        print(f"📂 Files saved to: {args['output']}")
-        return True
-
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        if args.get("verbose", False):
-            import traceback
-
-            traceback.print_exc()
-        return False
+    # Initialize processor and delegate to the EmailProcessor method
+    processor = EmailProcessor(args["input"])
+    return processor.process_emails(
+        output_dir=args["output"],
+        output_format=args["format"],
+        verbose=args.get("verbose", False),
+        dry_run=args.get("dry_run", False)
+    )
 
 
 def main():

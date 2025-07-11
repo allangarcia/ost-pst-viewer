@@ -3,6 +3,7 @@ import os
 import re
 from datetime import datetime
 from email import policy
+from pathlib import Path
 
 import pypff
 from reportlab.lib.pagesizes import letter
@@ -79,6 +80,142 @@ class EmailProcessor:
         pst_file.close()
 
         return self.emails
+
+    def process_emails(self, output_dir, output_format="eml", verbose=False, dry_run=False):
+        """
+        Process emails with the given arguments and extract them to the specified formats.
+
+        Args:
+            output_dir (str): Output directory for extracted emails
+            output_format (str): Output format ('eml', 'pdf', or 'both')
+            verbose (bool): Enable verbose output
+            dry_run (bool): Preview mode without saving files
+
+        Returns:
+            bool: True if processing was successful, False if errors occurred.
+
+        This method performs the core email extraction workflow:
+        - Validates the input PST/OST file
+        - Creates the output directory structure
+        - Loads and processes all emails from the PST file
+        - Saves emails in the requested format(s)
+        - Extracts and saves attachments
+        - Provides progress feedback and error handling
+        """
+        from pst_processor import PSTProcessor
+        from file_saver import FileSaver
+        
+        # Validate input file using PSTProcessor
+        pst_processor = PSTProcessor()
+        if not pst_processor.validate_pst_file(self.file_path):
+            print(f"❌ Error: Input file '{self.file_path}' does not exist or is not a valid PST/OST file.")
+            return False
+
+        # Create output directory
+        output_path = Path(output_dir)
+        if not dry_run:
+            output_path.mkdir(parents=True, exist_ok=True)
+
+        print(f"\n🔍 Processing PST/OST file: {self.file_path}")
+        print(f"📂 Output directory: {output_dir}")
+        print(f"📄 Output format: {output_format}")
+        print("-" * 50)
+
+        try:
+            # Load emails
+            emails = self.load_emails()
+
+            print(f"✅ Found {len(emails)} emails to process")
+
+            if dry_run:
+                print("\n📋 DRY RUN - Files that would be created:")
+                for i, email_data in enumerate(emails[:10]):  # Show first 10 as preview
+                    email = email_data["message"]
+                    folder_path = email_data["folder_path"]
+
+                    # Format delivery time for filename
+                    date_prefix = self._format_delivery_time(email)
+                    subject = email.subject or "no_subject"
+                    clean_subject = subject[:50].strip()
+
+                    if output_format in ["eml", "both"]:
+                        print(f"  📧 {folder_path}/{date_prefix} - {clean_subject}.eml")
+                    if output_format in ["pdf", "both"]:
+                        print(f"  📄 {folder_path}/{date_prefix} - {clean_subject}.pdf")
+
+                if len(emails) > 10:
+                    print(f"  ... and {len(emails) - 10} more emails")
+                return True
+
+            # Initialize file saver
+            file_saver = FileSaver(output_dir)
+
+            # Process each email
+            processed = 0
+            for email_data in emails:
+                email = email_data["message"]
+                folder_path = email_data["folder_path"]
+
+                try:
+                    # Create folder structure using FileSaver
+                    full_folder_path = file_saver._create_full_path(folder_path)
+
+                    # Save email in requested format(s)
+                    if output_format in ["eml", "both"]:
+                        self.save_as_eml(email, full_folder_path)
+                        if verbose:
+                            print(
+                                f"✅ Saved EML: {folder_path}/{email.subject or 'No Subject'}"
+                            )
+
+                    if output_format in ["pdf", "both"]:
+                        self.save_as_pdf(email, full_folder_path)
+                        if verbose:
+                            print(
+                                f"✅ Saved PDF: {folder_path}/{email.subject or 'No Subject'}"
+                            )
+
+                    # Save attachments if any
+                    try:
+                        num_attachments = email.number_of_attachments
+                        if num_attachments and num_attachments > 0:
+                            attachments_folder = os.path.join(full_folder_path, "attachments")
+                            os.makedirs(attachments_folder, exist_ok=True)
+
+                            for i in range(num_attachments):
+                                try:
+                                    attachment = email.get_attachment(i)
+                                    file_saver.save_attachment(attachment, attachments_folder)
+                                    if verbose:
+                                        print(f"📎 Saved attachment: {attachment.name}")
+                                except Exception as e:
+                                    print(f"⚠️  Error saving attachment {i}: {e}")
+                    except Exception:
+                        # Silently assume no attachments if access fails
+                        pass
+
+                    processed += 1
+
+                    # Progress indicator
+                    if not verbose and processed % 50 == 0:
+                        print(f"📧 Processed {processed}/{len(emails)} emails...")
+
+                except Exception as e:
+                    print(
+                        f"❌ Error processing email '{email.subject or 'No Subject'}': {e}"
+                    )
+                    continue
+
+            print(f"\n🎉 Successfully processed {processed}/{len(emails)} emails!")
+            print(f"📂 Files saved to: {output_dir}")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            if verbose:
+                import traceback
+                traceback.print_exc()
+            return False
 
     def save_as_eml(self, email, output_path):
         """
