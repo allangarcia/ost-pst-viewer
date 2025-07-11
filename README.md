@@ -16,7 +16,7 @@ This project is a PST/OST email exporter that allows users to extract Outlook em
 ## Project Structure
 
 ```
-ost-pst-viewer/
+pst-exporter/
 ├── pst-exporter.py             # Main script (interactive + CLI modes)
 ├── pst-exporter.bat            # Windows wrapper for easy execution
 ├── src/                        # Core application code
@@ -37,7 +37,7 @@ ost-pst-viewer/
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd ost-pst-viewer
+   cd pst-exporter/
    ```
 
 2. Install the required dependencies:
@@ -114,6 +114,12 @@ output/
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
+
+## Desirable changes
+
+- Delegate more methods from the main pst-exporter.py script to other files
+- Separate some methods by subject to be in their own files
+- Separete the command-line logic from the main pst-exporter.py
 
 ## License
 
