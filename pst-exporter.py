@@ -4,15 +4,15 @@ PST/OST Email Exporter - Main Script
 This script processes PST/OST files and extracts emails to various formats.
 """
 
-import argparse
 import os
 import sys
+import argparse
 
 # Add src directory to path to import our modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-from email_processor import EmailProcessor  # noqa: E402
 from pst_processor import PSTProcessor  # noqa: E402
+from email_processor import EmailProcessor  # noqa: E402
 
 
 def interactive_mode():

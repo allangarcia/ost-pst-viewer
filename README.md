@@ -12,35 +12,44 @@ This project is a PST/OST email exporter that allows users to extract Outlook em
 - ⚡ Command-line interface for batch processing
 - 🔧 Smart filename sanitization and duplicate handling
 - 📅 Automatic date extraction for chronological organization
+- 🌐 Smart encoding detection for international characters
+- 📬 Improved recipient handling from email headers
+- ✅ Comprehensive error handling and validation
 
 ## Project Structure
 
-```
+```text
 pst-exporter/
 ├── pst-exporter.py             # Main script (interactive + CLI modes)
-├── pst-exporter.bat            # Windows wrapper for easy execution
 ├── src/                        # Core application code
 │   ├── email_processor.py      # Handles email extraction and processing
-│   └── file_saver.py           # Responsible for saving emails and attachments
+│   ├── file_saver.py           # Responsible for saving emails and attachments
+│   └── pst_processor.py        # Handles PST file discovery and validation
 ├── tests/                      # Unit tests
 │   ├── test_email_processor.py # Unit tests for EmailProcessor
-│   └── test_file_saver.py      # Unit tests for FileSaver
+│   ├── test_file_saver.py      # Unit tests for FileSaver
+│   └── test_pst_processor.py   # Unit tests for PSTProcessor
 ├── pst_files/                  # Place your PST/OST files here
 ├── output/                     # Generated output files
 ├── requirements.txt            # Project dependencies
+├── pyproject.toml              # Python project configuration
+├── setup.cfg                   # Additional project setup
 ├── .gitignore                  # Git ignore rules
+├── SECURITY.md                 # Security policy
 └── README.md                   # Project documentation
 ```
 
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone <repository-url>
    cd pst-exporter/
    ```
 
 2. Install the required dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -55,8 +64,8 @@ Simply run the script without any arguments to enter interactive mode:
 # Linux/Mac/Codespaces
 ./pst-exporter.py
 
-# Windows
-pst-exporter.bat
+# Windows (PowerShell or Command Prompt)
+python pst-exporter.py
 ```
 
 The interactive mode will:
@@ -99,7 +108,7 @@ For batch processing or automation:
 
 Output files are organized with date prefixes for easy chronological sorting:
 
-```
+```text
 output/
 ├── [2024-03-15] - Meeting Notes.eml
 ├── [2024-03-15] - Project Update.pdf
@@ -111,16 +120,29 @@ output/
     └── [2024-03-17] - Reply.eml
 ```
 
+## Recent Improvements
+
+Recent updates to the project include:
+
+- ✅ **Refactored architecture**: Email processing logic moved to EmailProcessor class for better organization
+- ✅ **PST file operations**: Extracted into dedicated PSTProcessor class for improved modularity
+- ✅ **Enhanced encoding detection**: Smart handling of international characters and email encodings
+- ✅ **Better recipient handling**: Improved extraction of recipient information from email headers
+- ✅ **Comprehensive testing**: Unit tests for all major components
+
+## Future Enhancements
+
+Potential areas for improvement:
+
+- Separate command-line argument parsing into its own module
+- Add configuration file support for default settings
+- Implement email filtering and search capabilities
+- Add support for additional output formats (HTML, JSON)
+
 ## Contributing
 
 Contributions are welcome! Please open an issue or submit a pull request for any enhancements or bug fixes.
 
-## Desirable changes
-
-- Delegate more methods from the main pst-exporter.py script to other files
-- Separate some methods by subject to be in their own files
-- Separete the command-line logic from the main pst-exporter.py
-
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+This project is licensed under the MIT License.
